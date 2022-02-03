@@ -1,15 +1,17 @@
 using UnityEngine;
+using Mirror;
 
-[RequireComponent(typeof(CharacterController))]
-public abstract class EntityController : MonoBehaviour
+public abstract class EntityController : NetworkBehaviour
 {
     [Header("Stats")]
     [SerializeField]
     protected int hp;
+    [SyncVar]
     [SerializeField]
     protected float moveSpeed;
+    [SyncVar]
     [SerializeField]
-    protected float jumpHeight;
+    protected float jumpForce;
 
     [Header("Help Objects")]
     [SerializeField]
@@ -22,34 +24,17 @@ public abstract class EntityController : MonoBehaviour
     [SerializeField]
     protected Transform firePoint;      //position of creating bullets
 
-    protected CharacterController characterController;
-    protected Vector3 velocity;
-
+    protected Rigidbody rigidbody;
 
     protected virtual void Initializate()
     {
-        characterController = gameObject.GetComponent<CharacterController>();
-        velocity = Vector3.zero;
+        rigidbody = gameObject.GetComponent<Rigidbody>();
     }
 
-    protected abstract void Move();
-    protected abstract void Jump();
-    protected abstract void Shoot();
+    public abstract void Move(Vector3 step);
+    public abstract void Jump();
+    public abstract void Shoot();
     protected abstract void Dead();
-
-    protected void Landing()
-    {
-        if (IsGround() && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-    }
-
-    protected void Fall()
-    {
-        velocity.y += Physics.gravity.y * Time.deltaTime;
-        characterController.Move(velocity * Time.deltaTime);
-    }
 
     protected bool IsGround()
     {

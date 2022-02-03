@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public class PlayerController : EntityController
 {
@@ -18,54 +19,80 @@ public class PlayerController : EntityController
 
     private int weaponIndex;        //index of current choosen weapon
 
-    private void Awake()
+    private void Start()
     {
         Initializate();
+        NetInitializate();
     }
 
-    private void Update()
+    [Client]
+    private void NetInitializate()
     {
-        Move();
-        Jump();
-        SwitchWeapon();
-        Shoot();
+        if (isLocalPlayer)
+        {
+            InputManager.Instance.SetPlayer(this);
+            InputManager.Instance.SetCamera(camera.gameObject.GetComponent<CameraController>());
+        }
     }
 
+    
     protected override void Initializate()
     {
-        base.Initializate();
+        if (isClient && isLocalPlayer)
+        {
+            base.Initializate();
 
-        weaponIndex = 0;
-        ActivateChoosenWeapon();
+            weaponIndex = 0;
+            //ActivateChoosenWeapon();
 
-        playerTransform = gameObject.GetComponent<Transform>();
+            playerTransform = gameObject.GetComponent<Transform>();
+            DefaultCamera.Instance.SwitchCamera();
+            UIManager.Instance.SwitchSpawnFrame();
+        }
+        else if(isClient)
+        {
+            camera.gameObject.SetActive(false);
+        }
     }
 
-    protected override void Move()
+    [Command]
+    public void CmdMove(Vector3 step)
     {
-        float moveX = Input.GetAxisRaw("Horizontal") * moveSpeed * Time.deltaTime;
-        float moveZ = Input.GetAxisRaw("Vertical") * moveSpeed * Time.deltaTime;
-        Vector3 movePos = transform.right * moveX + transform.forward * moveZ;
-
-        characterController.Move(movePos);
+        transform.position += step.normalized * moveSpeed * Time.deltaTime;
     }
 
-    protected override void Jump()
+    [Client]
+    public override void Move(Vector3 step)
     {
-        Landing();
+        transform.position += step.normalized * moveSpeed * Time.deltaTime;
+    }
 
+    [Command]
+    public void CmdRotate(float angle)
+    {
+        transform.Rotate(Vector3.up * angle);
+    }
+
+    [Client]
+    public void Rotate(float angle)
+    {
+        transform.Rotate(Vector3.up * angle);
+    }
+
+    [Client]
+    public override void Jump()
+    {
         if(Input.GetKeyDown(KeyCode.Space))
         {
             if(IsGround())
             {
-                velocity.y = Mathf.Sqrt(jumpHeight * -Physics.gravity.y);
+                rigidbody.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
             }
         }
-
-        Fall();
     }
 
-    private void SwitchWeapon()
+    [Client]
+    public void SwitchWeapon()
     {
         int currentWeapon = weaponIndex;
 
@@ -90,6 +117,7 @@ public class PlayerController : EntityController
         }
     }
 
+    [Client]
     private void ActivateChoosenWeapon()
     {
         if(weaponIndex == weapons.Length)
@@ -115,6 +143,7 @@ public class PlayerController : EntityController
         }
     }
 
+    [Client]
     private IEnumerator ChangeWeapon(int indexWeapon)
     {
         yield return new WaitForSeconds(changeDelay);
@@ -124,7 +153,7 @@ public class PlayerController : EntityController
         ActivateChoosenWeapon();
     }
 
-    protected override void Shoot()
+    public override void Shoot()
     {
         if(Input.GetKey(KeyCode.Mouse0))
         {
@@ -133,9 +162,19 @@ public class PlayerController : EntityController
         }
     }
 
+    [Client]
     protected override void Dead()
     {
         GameController.ReloadScene();
     }
 
+    [Client]
+    private void OnDestroy()
+    {
+        if (isClient && isLocalPlayer)
+        {
+            InputManager.Instance.SetPlayer(null);
+            InputManager.Instance.SetCamera(null);
+        }
+    }
 }

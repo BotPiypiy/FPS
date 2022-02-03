@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public class CameraController : MonoBehaviour
 {
@@ -8,11 +9,11 @@ public class CameraController : MonoBehaviour
     private float sensevity;
 
     [SerializeField]
-    private Transform player;
+    private PlayerController player;
 
     private float cameraRotation;       //current camera rotation
 
-    private void Awake()
+    private void Start()
     {
         Initializate();
     }
@@ -22,20 +23,39 @@ public class CameraController : MonoBehaviour
         Look();
     }
 
+    [Client]
     private void Initializate()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        cameraRotation = 0f;
     }
 
+    public float GetSensevity()
+    {
+        return sensevity;
+    }
+
+    [Client]
     private void Look()
     {
-        float mouseX = Input.GetAxisRaw("Mouse X") * sensevity * Time.deltaTime;
-        float mouseY = Input.GetAxisRaw("Mouse Y") * sensevity * Time.deltaTime;
 
-        player.transform.Rotate(Vector3.up * mouseX);
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+            return;
+        }
+    }
 
-        cameraRotation -= mouseY;
+    [Client]
+    public void Rotate(float angle)
+    {
+        cameraRotation -= angle;
         cameraRotation = Mathf.Clamp(cameraRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(cameraRotation, 0, 0);

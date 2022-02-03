@@ -27,6 +27,7 @@ public class Weapon : MonoBehaviour
     private int ammo;                   //current ammo
 
     private Coroutine reloadCoroutine;      //coroutine of reloading, needed to stop reloading, if player switching another weapon
+    private bool isReloading;
 
     private void Awake()
     {
@@ -37,6 +38,7 @@ public class Weapon : MonoBehaviour
     {
         shootTime = Time.time;
         ammo = maxAmmo;
+        isReloading = false;
     }
 
     public void Shoot(Vector3 position, Vector3 rotation)
@@ -58,6 +60,7 @@ public class Weapon : MonoBehaviour
         else
         {
             reloadCoroutine = StartCoroutine(Reload());
+            isReloading = true;
         }
     }
 
@@ -79,6 +82,9 @@ public class Weapon : MonoBehaviour
 
     private void OnDisable()
     {
-        StopCoroutine(reloadCoroutine);
+        if (isReloading)
+        {
+            StopCoroutine(reloadCoroutine);
+        }
     }
 }

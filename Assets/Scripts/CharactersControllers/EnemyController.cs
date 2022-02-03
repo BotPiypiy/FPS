@@ -21,11 +21,11 @@ public class EnemyController : EntityController
 
     private void Update()
     {
-        Move();
-        Fall();
-        Jump();
-        transform.LookAt(PlayerController.playerTransform);
-        Shoot();
+        //Move();
+        //Fall();
+        //Jump();
+        //transform.LookAt(PlayerController.playerTransform);
+        //Shoot();
     }
 
     protected override void Initializate()
@@ -51,17 +51,17 @@ public class EnemyController : EntityController
         }
     }
 
-    protected override void Move()
+    public override void Move(Vector3 step)
     {
    
     }
 
-    protected override void Jump()
+    public override void Jump()
     {
      
     }
 
-    protected override void Shoot()
+    public override void Shoot()
     {
         if (Time.time > attackTime + attackDelay)
         {
