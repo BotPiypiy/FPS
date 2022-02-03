@@ -60,7 +60,7 @@ public class InputManager : MonoBehaviour
         Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
 
         player.CmdMove(movePos);
-        player.Move(movePos);
+        //player.Move(movePos);
     }
 
     [Client]
@@ -72,7 +72,7 @@ public class InputManager : MonoBehaviour
             float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
 
             player.CmdRotate(mouseX);
-            player.Rotate(mouseX);
+            //player.Rotate(mouseX);
 
             camera.Rotate(mouseY);
         }

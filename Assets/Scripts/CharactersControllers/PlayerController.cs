@@ -19,7 +19,7 @@ public class PlayerController : EntityController
 
     private int weaponIndex;        //index of current choosen weapon
 
-    private void Start()
+    public void Start()
     {
         Initializate();
         NetInitializate();
@@ -28,14 +28,14 @@ public class PlayerController : EntityController
     [Client]
     private void NetInitializate()
     {
-        if (isLocalPlayer)
+        if (isClient && isLocalPlayer)
         {
             InputManager.Instance.SetPlayer(this);
             InputManager.Instance.SetCamera(camera.gameObject.GetComponent<CameraController>());
         }
     }
 
-    
+    [Client]
     protected override void Initializate()
     {
         if (isClient && isLocalPlayer)

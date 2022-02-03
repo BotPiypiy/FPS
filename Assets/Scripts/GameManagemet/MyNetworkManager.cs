@@ -13,6 +13,8 @@ public class MyNetworkManager : NetworkManager
         Initializate();
     }
 
+    public override void Start(){ }
+
     private void Initializate()
     {
         if(!Instance)
