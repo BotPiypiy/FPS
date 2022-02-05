@@ -8,7 +8,7 @@ public class PlayerController : EntityController
     public static Transform playerTransform;        //player transform for enemies
 
     [SerializeField]
-    private Transform camera;       //main camera
+    private CameraController camera;       //main camera
 
     [SerializeField]
     private float changeDelay;      //time needed for changing weapon
@@ -33,7 +33,7 @@ public class PlayerController : EntityController
         if (isClient && isLocalPlayer)
         {
             InputManager.Instance.SetPlayer(this);
-            InputManager.Instance.SetCamera(camera.gameObject.GetComponent<CameraController>());
+            InputManager.Instance.SetCamera(camera);
         }
     }
 
@@ -51,15 +51,16 @@ public class PlayerController : EntityController
             DefaultCamera.Instance.SwitchCamera();
             UIManager.Instance.SwitchSpawnFrame();
         }
-        else if(isClient)
+        else
         {
-            camera.gameObject.SetActive(false);
+            camera.gameObject.GetComponent<Camera>().enabled = false;
+            camera.gameObject.GetComponent<AudioListener>().enabled = false;
         }
     }
 
     private void Update()
     {
-        CmdFall();
+        Fall();
     }
 
     [ClientRpc]
@@ -79,14 +80,14 @@ public class PlayerController : EntityController
     }
 
     [Command]
-    public void CmdRotate(float angle)
+    public void CmdRotateX(float angle)
     {
         transform.Rotate(Vector3.up * angle);
-        RpcRotate(angle);
+        RpcRotateX(angle);
     }
 
     [ClientRpc]
-    public void RpcRotate(float angle)
+    private void RpcRotateX(float angle)
     {
         if (isClientOnly)
         {
@@ -95,7 +96,23 @@ public class PlayerController : EntityController
     }
 
     [Command]
-    private void CmdFall()
+    public void CmdRotateY(float angle)
+    {
+        camera.Rotate(angle);
+        RpcRotateY(camera.transform.localRotation);
+    }
+
+    [ClientRpc]
+    public void RpcRotateY(Quaternion rot)
+    {
+        if (isClientOnly)
+        {
+            camera.transform.localRotation = rot;
+        }
+    }
+
+    [Server]
+    private void Fall()
     {
         if (IsGround() && verticalVelocity < 0)
         {
@@ -187,7 +204,7 @@ public class PlayerController : EntityController
     {
         if(Input.GetKey(KeyCode.Mouse0))
         {
-            Vector3 rotation = new Vector3(camera.localEulerAngles.x, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            Vector3 rotation = new Vector3(camera.transform.localEulerAngles.x, transform.localEulerAngles.y, transform.localEulerAngles.z);
             weapons[weaponIndex].GetComponent<Weapon>().Shoot(firePoint.position, rotation);
         }
     }

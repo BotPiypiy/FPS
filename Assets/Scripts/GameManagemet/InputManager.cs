@@ -46,21 +46,23 @@ public class InputManager : NetworkBehaviour
         {
             InputMove();
             InputJump();
+            InputView();
         }
-        if (camera)
-        {
-            InputCamera();
-        }
+
+        InputCursor();
     }
 
     [Client]
     private void InputMove()
     {
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveZ = Input.GetAxisRaw("Vertical");
-        Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            float moveX = Input.GetAxisRaw("Horizontal");
+            float moveZ = Input.GetAxisRaw("Vertical");
+            Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
 
-        player.CmdMove(movePos);
+            player.CmdMove(movePos);
+        }
     }
 
     [Client]
@@ -73,15 +75,32 @@ public class InputManager : NetworkBehaviour
     }
 
     [Client]
-    private void InputCamera()
+    private void InputView()
     {
         if (Cursor.lockState == CursorLockMode.Locked)
         {
             float mouseX = Input.GetAxisRaw("Mouse X") * camera.GetSensevity() * Time.deltaTime;
             float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
 
-            player.CmdRotate(mouseX);
-            camera.Rotate(mouseY);
+            player.CmdRotateX(mouseX);
+            player.CmdRotateY(mouseY);
+        }
+    }
+
+    [Client]
+    private void InputCursor()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+            return;
         }
     }
 }

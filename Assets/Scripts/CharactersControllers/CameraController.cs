@@ -18,10 +18,6 @@ public class CameraController : MonoBehaviour
         Initializate();
     }
 
-    void Update()
-    {
-        Look();
-    }
 
     [Client]
     private void Initializate()
@@ -34,25 +30,6 @@ public class CameraController : MonoBehaviour
         return sensevity;
     }
 
-    [Client]
-    private void Look()
-    {
-
-        if(Input.GetKeyDown(KeyCode.Escape))
-        {
-            if (Cursor.lockState == CursorLockMode.Locked)
-            {
-                Cursor.lockState = CursorLockMode.None;
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
-            return;
-        }
-    }
-
-    [Client]
     public void Rotate(float angle)
     {
         cameraRotation -= angle;
