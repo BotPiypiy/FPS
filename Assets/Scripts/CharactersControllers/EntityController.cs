@@ -11,7 +11,7 @@ public abstract class EntityController : NetworkBehaviour
     protected float moveSpeed;
     [SyncVar]
     [SerializeField]
-    protected float jumpForce;
+    protected float jumpHeight;
 
     [Header("Help Objects")]
     [SerializeField]
@@ -24,15 +24,8 @@ public abstract class EntityController : NetworkBehaviour
     [SerializeField]
     protected Transform firePoint;      //position of creating bullets
 
-    protected Rigidbody rigidbody;
 
-    protected virtual void Initializate()
-    {
-        rigidbody = gameObject.GetComponent<Rigidbody>();
-    }
-
-    public abstract void Move(Vector3 step);
-    public abstract void Jump();
+    protected abstract void Initializate();
     public abstract void Shoot();
     protected abstract void Dead();
 

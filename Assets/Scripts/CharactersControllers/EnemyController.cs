@@ -30,8 +30,6 @@ public class EnemyController : EntityController
 
     protected override void Initializate()
     {
-        base.Initializate();
-
         WeaponInit();
 
         attackTime = Time.time + attackDelay;
@@ -49,16 +47,6 @@ public class EnemyController : EntityController
                 Destroy(weapons[i]);
             }
         }
-    }
-
-    public override void Move(Vector3 step)
-    {
-   
-    }
-
-    public override void Jump()
-    {
-     
     }
 
     public override void Shoot()

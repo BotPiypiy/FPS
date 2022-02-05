@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 
-public class InputManager : MonoBehaviour
+public class InputManager : NetworkBehaviour
 {
     private PlayerController player;
     private CameraController camera;
@@ -45,6 +45,7 @@ public class InputManager : MonoBehaviour
         if (player)
         {
             InputMove();
+            InputJump();
         }
         if (camera)
         {
@@ -60,7 +61,15 @@ public class InputManager : MonoBehaviour
         Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
 
         player.CmdMove(movePos);
-        //player.Move(movePos);
+    }
+
+    [Client]
+    private void InputJump()
+    {
+        if(Input.GetKeyDown(KeyCode.Space))
+        {
+            player.CmdJump();
+        }
     }
 
     [Client]
@@ -72,8 +81,6 @@ public class InputManager : MonoBehaviour
             float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
 
             player.CmdRotate(mouseX);
-            //player.Rotate(mouseX);
-
             camera.Rotate(mouseY);
         }
     }

@@ -26,6 +26,6 @@ public class PlayerManager : MonoBehaviour
 
     public void SpawnPlayer()
     {
-            NetworkClient.AddPlayer();
+        NetworkClient.AddPlayer();
     }
 }

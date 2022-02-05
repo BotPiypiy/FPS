@@ -19,6 +19,8 @@ public class PlayerController : EntityController
 
     private int weaponIndex;        //index of current choosen weapon
 
+    private float verticalVelocity;
+
     public void Start()
     {
         Initializate();
@@ -40,7 +42,7 @@ public class PlayerController : EntityController
     {
         if (isClient && isLocalPlayer)
         {
-            base.Initializate();
+            verticalVelocity = 0;
 
             weaponIndex = 0;
             //ActivateChoosenWeapon();
@@ -55,39 +57,67 @@ public class PlayerController : EntityController
         }
     }
 
+    private void Update()
+    {
+        CmdFall();
+    }
+
+    [ClientRpc]
+    private void RpcTranslate(Vector3 pos)
+    {
+        if(isClientOnly)
+        {
+            transform.position = pos;
+        }
+    }
+
     [Command]
     public void CmdMove(Vector3 step)
     {
         transform.position += step.normalized * moveSpeed * Time.deltaTime;
-    }
-
-    [Client]
-    public override void Move(Vector3 step)
-    {
-        transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        RpcTranslate(transform.position);
     }
 
     [Command]
     public void CmdRotate(float angle)
     {
         transform.Rotate(Vector3.up * angle);
+        RpcRotate(angle);
     }
 
-    [Client]
-    public void Rotate(float angle)
+    [ClientRpc]
+    public void RpcRotate(float angle)
     {
-        transform.Rotate(Vector3.up * angle);
-    }
-
-    [Client]
-    public override void Jump()
-    {
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (isClientOnly)
         {
-            if(IsGround())
-            {
-                rigidbody.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
-            }
+            transform.Rotate(Vector3.up * angle);
+        }
+    }
+
+    [Command]
+    private void CmdFall()
+    {
+        if (IsGround() && verticalVelocity < 0)
+        {
+            verticalVelocity = 0;
+        }
+        else if (!IsGround())
+        {
+            verticalVelocity += Physics.gravity.y * Time.deltaTime;
+        }
+
+        transform.position += Vector3.up * verticalVelocity * Time.deltaTime;
+        RpcTranslate(transform.position);
+    }
+
+    [Command]
+    public void CmdJump()
+    {
+        if (IsGround())
+        {
+            verticalVelocity = Mathf.Sqrt((jumpHeight + jumpHeight) * (-Physics.gravity.y));
+            transform.position += Vector3.up * verticalVelocity * Time.deltaTime;
+            RpcTranslate(transform.position);
         }
     }
 
