@@ -62,6 +62,7 @@ public class InputManager : NetworkBehaviour
             Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
 
             player.CmdMove(movePos);
+            player.Move(movePos);
         }
     }
 
@@ -83,7 +84,9 @@ public class InputManager : NetworkBehaviour
             float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
 
             player.CmdRotateX(mouseX);
+            player.RotateX(mouseX);
             player.CmdRotateY(mouseY);
+            player.RotateY(mouseY);
         }
     }
 

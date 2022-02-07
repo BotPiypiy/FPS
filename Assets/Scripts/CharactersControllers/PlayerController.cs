@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 
+//сдлетаь синхронизирующие функции, ответки не должны воздействовать на игрока, который послал команду
+
 public class PlayerController : EntityController
 {
-    public static Transform playerTransform;        //player transform for enemies
-
     [SerializeField]
     private CameraController camera;       //main camera
 
@@ -21,20 +21,15 @@ public class PlayerController : EntityController
 
     private float verticalVelocity;
 
+    [Header("Network")]
+    [SerializeField]
+    private float syncDelay;
+    private float syncTime;
+
+
     public void Start()
     {
         Initializate();
-        NetInitializate();
-    }
-
-    [Client]
-    private void NetInitializate()
-    {
-        if (isClient && isLocalPlayer)
-        {
-            InputManager.Instance.SetPlayer(this);
-            InputManager.Instance.SetCamera(camera);
-        }
     }
 
     [Client]
@@ -42,12 +37,14 @@ public class PlayerController : EntityController
     {
         if (isClient && isLocalPlayer)
         {
+            InputManager.Instance.SetPlayer(this);
+            InputManager.Instance.SetCamera(camera);
+
             verticalVelocity = 0;
 
             weaponIndex = 0;
             //ActivateChoosenWeapon();
 
-            playerTransform = gameObject.GetComponent<Transform>();
             DefaultCamera.Instance.SwitchCamera();
             UIManager.Instance.SwitchSpawnFrame();
         }
@@ -60,16 +57,54 @@ public class PlayerController : EntityController
 
     private void Update()
     {
-        Fall();
+        if (isServer)
+        {
+            Fall();
+            CmdIgnoreRigidbody();
+        }
+        else if(isClient)
+        {
+            RpcSyncPos(transform.position);
+        }
+    }
+
+    [Server]
+    private void CmdIgnoreRigidbody()
+    {
+        gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        RpcIgnoreRigidbody();
+    }
+
+    [ClientRpc]
+    private void RpcIgnoreRigidbody()
+    {
+        if(isClientOnly)
+        {
+            gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
+            gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        }
     }
 
     [ClientRpc]
     private void RpcTranslate(Vector3 pos)
     {
-        if(isClientOnly)
+        transform.position = pos;
+    }
+
+    [ClientRpc]
+    private void RpcRotate(Quaternion rot)
+    {
+        if (isClientOnly && !isLocalPlayer)
         {
-            transform.position = pos;
+            gameObject.transform.rotation = rot;
         }
+    }
+
+    [TargetRpc]
+    private void RpcSyncPos(Vector3 pos)
+    {
+        transform.position = pos;
     }
 
     [Command]
@@ -79,15 +114,24 @@ public class PlayerController : EntityController
         RpcTranslate(transform.position);
     }
 
+    [Client]
+    public void Move(Vector3 step)
+    {
+        if(isClientOnly)
+        {
+            transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        }
+    }
+
     [Command]
     public void CmdRotateX(float angle)
     {
         transform.Rotate(Vector3.up * angle);
-        RpcRotateX(angle);
+        RpcRotate(transform.rotation);
     }
 
-    [ClientRpc]
-    private void RpcRotateX(float angle)
+    [Client]
+    public void RotateX(float angle)
     {
         if (isClientOnly)
         {
@@ -103,11 +147,20 @@ public class PlayerController : EntityController
     }
 
     [ClientRpc]
-    public void RpcRotateY(Quaternion rot)
+    private void RpcRotateY(Quaternion rot)
+    {
+        if (isClientOnly && !isLocalPlayer)
+        {
+            camera.gameObject.transform.localRotation = rot;
+        }
+    }
+
+    [Client]
+    public void RotateY(float angle)
     {
         if (isClientOnly)
         {
-            camera.transform.localRotation = rot;
+            camera.Rotate(angle);
         }
     }
 
