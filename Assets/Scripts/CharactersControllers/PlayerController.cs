@@ -31,7 +31,6 @@ public class PlayerController : EntityController
         if (isClient && isLocalPlayer)
         {
             InputManager.Instance.SetPlayer(this);
-            InputManager.Instance.SetCamera(camera.gameObject.GetComponent<CameraController>());
         }
     }
 
@@ -59,24 +58,81 @@ public class PlayerController : EntityController
     public void CmdMove(Vector3 step)
     {
         transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        RpcMove(transform.position);
+    }
+
+    [ClientRpc]
+    public void RpcMove(Vector3 pos)
+    {
+        if (!isLocalPlayer)
+        {
+            transform.position = pos;
+        }
     }
 
     [Client]
     public override void Move(Vector3 step)
     {
-        transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        if (isClientOnly)
+        {
+            transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        }
+
+        CmdMove(step);
     }
 
     [Command]
-    public void CmdRotate(float angle)
+    public void CmdRotateX(float angle)
     {
-        transform.Rotate(Vector3.up * angle);
+        transform.Rotate(Vector3.up * angle * camera.gameObject.GetComponent<CameraController>().GetSensevity() * Time.deltaTime);
+        RpcRotateX(transform.rotation);
+    }
+
+    [ClientRpc]
+    public void RpcRotateX(Quaternion rot)
+    {
+        if(!isLocalPlayer)
+        {
+            transform.rotation = rot;
+        }
     }
 
     [Client]
-    public void Rotate(float angle)
+    public void RotateX(float angle)
     {
-        transform.Rotate(Vector3.up * angle);
+        if (isClientOnly)
+        {
+            transform.Rotate(Vector3.up * angle * camera.gameObject.GetComponent<CameraController>().GetSensevity() * Time.deltaTime);
+        }
+
+        CmdRotateX(angle);
+    }
+
+    [Command]
+    public void CmdRotateY(float angle)
+    {
+        camera.gameObject.GetComponent<CameraController>().Rotate(angle);
+        RpcRotateY(camera.rotation);
+    }
+
+    [ClientRpc]
+    public void RpcRotateY(Quaternion rot)
+    {
+        if (!isLocalPlayer)
+        {
+            camera.rotation = rot;
+        }
+    }
+
+    [Client]
+    public void RotateY(float angle)
+    {
+        if (isClientOnly)
+        {
+            camera.gameObject.GetComponent<CameraController>().Rotate(angle);
+        }
+
+        CmdRotateY(angle);
     }
 
     [Client]
@@ -174,7 +230,6 @@ public class PlayerController : EntityController
         if (isClient && isLocalPlayer)
         {
             InputManager.Instance.SetPlayer(null);
-            InputManager.Instance.SetCamera(null);
         }
     }
 }

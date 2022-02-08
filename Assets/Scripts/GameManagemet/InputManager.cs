@@ -6,7 +6,6 @@ using Mirror;
 public class InputManager : MonoBehaviour
 {
     private PlayerController player;
-    private CameraController camera;
 
     public static InputManager Instance;
 
@@ -34,20 +33,11 @@ public class InputManager : MonoBehaviour
         player = playerController;
     }
 
-    [Client]
-    public void SetCamera(CameraController cameraController)
-    {
-        camera = cameraController;
-    }
-
     private void Update()
     {
         if (player)
         {
             InputMove();
-        }
-        if (camera)
-        {
             InputCamera();
         }
     }
@@ -58,9 +48,8 @@ public class InputManager : MonoBehaviour
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
         Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
-
-        player.CmdMove(movePos);
-        //player.Move(movePos);
+    
+        player.Move(movePos);
     }
 
     [Client]
@@ -68,13 +57,11 @@ public class InputManager : MonoBehaviour
     {
         if (Cursor.lockState == CursorLockMode.Locked)
         {
-            float mouseX = Input.GetAxisRaw("Mouse X") * camera.GetSensevity() * Time.deltaTime;
-            float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
+            float mouseX = Input.GetAxisRaw("Mouse X");
+            float mouseY = Input.GetAxisRaw("Mouse Y");
 
-            player.CmdRotate(mouseX);
-            //player.Rotate(mouseX);
-
-            camera.Rotate(mouseY);
+            player.RotateX(mouseX);
+            player.RotateY(mouseY);
         }
     }
 }
