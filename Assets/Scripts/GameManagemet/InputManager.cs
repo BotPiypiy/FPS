@@ -6,7 +6,6 @@ using Mirror;
 public class InputManager : NetworkBehaviour
 {
     private PlayerController player;
-    private CameraController camera;
 
     public static InputManager Instance;
 
@@ -34,12 +33,6 @@ public class InputManager : NetworkBehaviour
         player = playerController;
     }
 
-    [Client]
-    public void SetCamera(CameraController cameraController)
-    {
-        camera = cameraController;
-    }
-
     private void Update()
     {
         if (player)
@@ -47,9 +40,8 @@ public class InputManager : NetworkBehaviour
             InputMove();
             InputJump();
             InputView();
+            InputCursor();
         }
-
-        InputCursor();
     }
 
     [Client]
@@ -61,7 +53,6 @@ public class InputManager : NetworkBehaviour
             float moveZ = Input.GetAxisRaw("Vertical");
             Vector3 movePos = player.transform.right * moveX + player.transform.forward * moveZ;
 
-            player.CmdMove(movePos);
             player.Move(movePos);
         }
     }
@@ -69,9 +60,12 @@ public class InputManager : NetworkBehaviour
     [Client]
     private void InputJump()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (Cursor.lockState == CursorLockMode.Locked)
         {
-            player.CmdJump();
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                player.Jump();
+            }
         }
     }
 
@@ -80,12 +74,10 @@ public class InputManager : NetworkBehaviour
     {
         if (Cursor.lockState == CursorLockMode.Locked)
         {
-            float mouseX = Input.GetAxisRaw("Mouse X") * camera.GetSensevity() * Time.deltaTime;
-            float mouseY = Input.GetAxisRaw("Mouse Y") * camera.GetSensevity() * Time.deltaTime;
+            float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime;
+            float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime;
 
-            player.CmdRotateX(mouseX);
             player.RotateX(mouseX);
-            player.CmdRotateY(mouseY);
             player.RotateY(mouseY);
         }
     }
@@ -103,7 +95,6 @@ public class InputManager : NetworkBehaviour
             {
                 Cursor.lockState = CursorLockMode.Locked;
             }
-            return;
         }
     }
 }

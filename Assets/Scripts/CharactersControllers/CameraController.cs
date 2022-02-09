@@ -32,7 +32,7 @@ public class CameraController : MonoBehaviour
 
     public void Rotate(float angle)
     {
-        cameraRotation -= angle;
+        cameraRotation -= angle * sensevity;
         cameraRotation = Mathf.Clamp(cameraRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(cameraRotation, 0, 0);
