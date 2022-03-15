@@ -43,24 +43,27 @@ public class Weapon : MonoBehaviour
 
     public void Shoot(Vector3 position, Vector3 rotation)
     {
-        if (ammo > 0)
+        if (isActiveAndEnabled)
         {
-            if (Time.time > shootTime + fireDelay + sprayDelay)         //shooting without spray
+            if (ammo > 0)
             {
-                ShootBullet(position, Quaternion.Euler(rotation));
-            }
-            else if (Time.time > shootTime + fireDelay)                 //shooting with spray
-            {
-                Quaternion sprayRotation = Quaternion.Euler(rotation.x + Random.Range(-spray, spray), rotation.y + Random.Range(-spray, spray),
-                    rotation.z + Random.Range(-spray, spray));
+                if (Time.time > shootTime + fireDelay + sprayDelay)         //shooting without spray
+                {
+                    ShootBullet(position, Quaternion.Euler(rotation));
+                }
+                else if (Time.time > shootTime + fireDelay)                 //shooting with spray
+                {
+                    Quaternion sprayRotation = Quaternion.Euler(rotation.x + Random.Range(-spray, spray), rotation.y + Random.Range(-spray, spray),
+                        rotation.z + Random.Range(-spray, spray));
 
-                ShootBullet(position, sprayRotation);
+                    ShootBullet(position, sprayRotation);
+                }
             }
-        }
-        else
-        {
-            reloadCoroutine = StartCoroutine(Reload());
-            isReloading = true;
+            else
+            {
+                reloadCoroutine = StartCoroutine(Reload());
+                isReloading = true;
+            }
         }
     }
 

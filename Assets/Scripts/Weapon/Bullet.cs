@@ -1,23 +1,43 @@
+using Mirror;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class Bullet : MonoBehaviour
+public class Bullet : NetworkBehaviour
 {
+    [SyncVar]
     [SerializeField]
     private float bulletSpeed;
+    [SerializeField]
+    private LayerMask layer;
 
     private int damage;
 
     private void Update()
     {
-        transform.localPosition += transform.forward * bulletSpeed * Time.deltaTime;
+        if (isServer)
+        {
+            Cast();
+        }
+        else if (isClient)
+        {
+            Move();
+        }
     }
 
-    private void OnTriggerEnter(Collider other)
+    [Server]
+    private void Cast()
     {
-        Touch(other);
+        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, bulletSpeed * Time.deltaTime, layer,
+            QueryTriggerInteraction.Ignore))
+        {
+            Touch(hit.collider);
+            TryDestroy();
+        }
+    }
+
+    private void Move()
+    {
+        transform.localPosition += transform.forward * bulletSpeed * Time.deltaTime;
     }
 
     public void Initializate(int _damage, float _liveTime)
@@ -34,17 +54,17 @@ public class Bullet : MonoBehaviour
         TryDestroy();
     }
 
+    [Server]
     private void Touch(Collider other)
     {
         EntityController entity = other.gameObject.GetComponent<EntityController>();
         if (entity)
         {
-            entity.Damage(damage);
+            entity.SDamage(damage);
         }
-
-        TryDestroy();
     }
 
+    [Server]
     private void TryDestroy()
     {
         if (gameObject)

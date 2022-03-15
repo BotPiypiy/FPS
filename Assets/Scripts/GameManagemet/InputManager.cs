@@ -40,6 +40,7 @@ public class InputManager : NetworkBehaviour
             InputMove();
             InputJump();
             InputView();
+            InputWeapon();
             InputCursor();
         }
     }
@@ -79,6 +80,23 @@ public class InputManager : NetworkBehaviour
 
             player.RotateX(mouseX);
             player.RotateY(mouseY);
+        }
+    }
+
+    [Client]
+    private void InputWeapon()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            player.SwitchWeapon(0);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            player.SwitchWeapon(1);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            player.SwitchWeapon(2);
         }
     }
 

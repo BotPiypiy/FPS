@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
+using System.Runtime.Serialization.Formatters.Binary;
 
 public class PlayerController : EntityController
 {
@@ -19,12 +20,13 @@ public class PlayerController : EntityController
 
     private Vector3 velocity;
 
+    Coroutine weaponChange;
+
     public void Start()
     {
         Initializate();
     }
 
-    [Client]
     protected override void Initializate()
     {
         if (isClient && isLocalPlayer)
@@ -33,14 +35,15 @@ public class PlayerController : EntityController
 
             velocity = Vector3.zero;
 
-            weaponIndex = 0;
-            //ActivateChoosenWeapon();
+            weaponIndex = 1;
+            SwitchWeapon(0);
 
             DefaultCamera.Instance.SwitchCamera();
             UIManager.Instance.SwitchSpawnFrame();
         }
-        else
+        else if(isClient && !isLocalPlayer)
         {
+            SwitchWeapon(weapons.Length + 1);
             camera.gameObject.GetComponent<Camera>().enabled = false;
             camera.gameObject.GetComponent<AudioListener>().enabled = false;
         }
@@ -49,24 +52,16 @@ public class PlayerController : EntityController
     private void Update()
     {
         Fall();
+        IgnoreRigidbody();
         PhysicsMove();
         if (isServer)
         {
-            IgnoreRigidbody();
             RpcTranslate(transform.position);
         }
     }
 
     #region Ignore Rgigidbody
-    [Server]
     private void IgnoreRigidbody()
-    {
-        gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
-        RpcIgnoreRigidbody();
-    }
-
-    [ClientRpc]
-    private void RpcIgnoreRigidbody()
     {
         gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
     }
@@ -76,8 +71,7 @@ public class PlayerController : EntityController
     [ClientRpc]
     private void RpcTranslate(Vector3 pos)
     {
-        if (false)                          //если слишком большая дистанция ??? (надо придумать как вычислять дистанцию
-                                            //или задать константу)
+        if (Vector3.Distance(transform.position, pos) > moveSpeed)
         {
             transform.position = pos;
         }
@@ -92,30 +86,39 @@ public class PlayerController : EntityController
 
     #region Move
     [Command]
-    public void CmdMove(Vector3 step)
+    private void CmdMove(Vector3 pos)
     {
-        transform.position += step.normalized * moveSpeed * Time.deltaTime;
-        RpcMove(transform.position);
+        if (Vector3.Distance(transform.position, pos) > moveSpeed)
+        {
+            TRpcMove(transform.position);
+        }
+        else
+        {
+            transform.position = pos;
+            RpcMove(transform.position);
+        }
     }
-
+   
     [ClientRpc]
-    public void RpcMove(Vector3 pos)
+    private void RpcMove(Vector3 pos)
     {
         if (!isLocalPlayer)
         {
             transform.position = pos;
         }
     }
+    
+    [TargetRpc]
+    private void TRpcMove(Vector3 pos)
+    {
+        transform.position = pos;
+    }
 
     [Client]
     public void Move(Vector3 step)
     {
-        if (isClientOnly)
-        {
-            transform.position += step.normalized * moveSpeed * Time.deltaTime;
-        }
-
-        CmdMove(step);
+        transform.position += step.normalized * moveSpeed * Time.deltaTime;
+        CmdMove(transform.position);
     }
     #endregion
 
@@ -227,36 +230,64 @@ public class PlayerController : EntityController
     }
     #endregion
 
-    [Client]
-    public void SwitchWeapon()
+    #region Weapon
+    [Command]
+    private void CmdSwitchWeapon(int index)
     {
-        int currentWeapon = weaponIndex;
-
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (weaponIndex > weapons.Length)
         {
-            weaponIndex = 0;
+            RpcSwitchWeapon(weaponIndex);
         }
-        if(Input.GetKeyDown(KeyCode.Alpha2))
+        else
         {
-            weaponIndex = 1;
-        }
-        if(Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            weaponIndex = 2;
-        }
-
-        if(weaponIndex != currentWeapon)
-        {
-            StartCoroutine(ChangeWeapon(weaponIndex));
-            weaponIndex = weapons.Length;
+            if (weaponIndex != index)
+            {
+                if (weaponIndex == weapons.Length)
+                {
+                    StopCoroutine(weaponChange);
+                }
+                weaponChange = StartCoroutine(SChangeWeapon(index));
+                weaponIndex = weapons.Length;
+            }
+            RpcSwitchWeapon(weaponIndex);
             ActivateChoosenWeapon();
         }
     }
 
+    [ClientRpc]
+    private void RpcSwitchWeapon(int index)
+    {
+        if(!isLocalPlayer)
+        {
+            weaponIndex = index;
+        }
+
+        ActivateChoosenWeapon();
+    }
+
     [Client]
+    public void SwitchWeapon(int index)
+    {
+        CmdSwitchWeapon(index);
+
+        if (isClientOnly)
+        {
+            if (weaponIndex != index)
+            {
+                if (weaponIndex == weapons.Length)
+                {
+                    StopCoroutine(weaponChange);
+                }
+                weaponChange = StartCoroutine(ChangeWeapon(index));
+                weaponIndex = weapons.Length;
+            }
+            ActivateChoosenWeapon();
+        }
+    }
+
     private void ActivateChoosenWeapon()
     {
-        if(weaponIndex == weapons.Length)
+        if (weaponIndex == weapons.Length)
         {
             for (int i = 0; i < weapons.Length; i++)
             {
@@ -274,9 +305,20 @@ public class PlayerController : EntityController
                 else
                 {
                     weapons[i].SetActive(false);
-                }    
+                }
             }
         }
+    }
+
+    [Server]
+    private IEnumerator SChangeWeapon(int indexWeapon)
+    {
+        yield return new WaitForSeconds(changeDelay);
+
+        weaponIndex = indexWeapon;
+
+        RpcSwitchWeapon(weaponIndex);
+        ActivateChoosenWeapon();
     }
 
     [Client]
@@ -288,6 +330,7 @@ public class PlayerController : EntityController
 
         ActivateChoosenWeapon();
     }
+    #endregion
 
     public override void Shoot()
     {
@@ -301,7 +344,10 @@ public class PlayerController : EntityController
     [Client]
     protected override void Dead()
     {
-        GameController.ReloadScene();
+        if (isLocalPlayer)
+        {
+            //NetworkClient.Disconnect();
+        } 
     }
 
     [Client]

@@ -34,10 +34,23 @@ public abstract class EntityController : NetworkBehaviour
         return Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
     }
 
-    public void Damage(int value)
+    [Server]
+    public void SDamage(int value)
     {
+        RpcDamage(value);
         hp -= value;
         if(hp<=0)
+        {
+            Dead();
+        }
+        
+    }
+
+    [ClientRpc]
+    private void RpcDamage(int value)
+    {
+        hp -= value;
+        if (hp <= 0)
         {
             Dead();
         }
